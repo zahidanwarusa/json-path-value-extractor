@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <title>JSON Path Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1c2e, #4a1c66);
+            min-height: 100vh;
+            color: #fff;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #00d2ff, #928dab);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #bbb;
+            font-size: 1.2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-section {
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            color: #fff;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            resize: none;
+            margin-bottom: 1rem;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #00d2ff;
+            box-shadow: 0 0 0 2px rgba(0, 210, 255, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(90deg, #00d2ff, #928dab);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-section {
+            padding: 2rem;
+        }
+
+        .result-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-box:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            color: #bbb;
+        }
+
+        .result-title i {
+            margin-right: 0.5rem;
+        }
+
+        .result-content {
+            font-family: 'Monaco', 'Consolas', monospace;
+            padding: 1rem;
+            border-radius: 8px;
+            word-break: break-all;
+        }
+
+        .paths {
+            background: rgba(0, 210, 255, 0.1);
+            color: #00d2ff;
+        }
+
+        .values {
+            background: rgba(130, 255, 124, 0.1);
+            color: #82ff7c;
+        }
+
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>JSON Path Extractor</h1>
+            <p>Extract paths and values with comma separation</p>
+        </div>
+        
+        <div class="card">
+            <div class="input-section">
+                <textarea id="jsonInput" placeholder='{"name": "John Doe", "job": "QA Lead"}'></textarea>
+                <button onclick="parseJson()">
+                    <i class="fas fa-magic"></i> Extract Paths and Values
+                </button>
+            </div>
+
+            <div class="result-section">
+                <div class="result-box">
+                    <div class="result-title">
+                        <i class="fas fa-route"></i> Paths:
+                    </div>
+                    <div id="pathsResult" class="result-content paths"></div>
+                </div>
+
+                <div class="result-box">
+                    <div class="result-title">
+                        <i class="fas fa-arrow-right"></i> Values:
+                    </div>
+                    <div id="valuesResult" class="result-content values"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function findPaths(obj, parentPath = '') {
+            let paths = [];
+            let values = [];
+            for (let key in obj) {
+                const currentPath = parentPath ? `${parentPath}.${key}` : key;
+                if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    const [childPaths, childValues] = findPaths(obj[key], currentPath);
+                    paths = paths.concat(childPaths);
+                    values = values.concat(childValues);
+                } else {
+                    paths.push(currentPath);
+                    values.push(obj[key]);
+                }
+            }
+            return [paths, values];
+        }
+
+        function parseJson() {
+            const input = document.getElementById('jsonInput').value;
+            const pathsResult = document.getElementById('pathsResult');
+            const valuesResult = document.getElementById('valuesResult');
+            
+            try {
+                const json = JSON.parse(input);
+                const [paths, values] = findPaths(json);
+                
+                if (paths.length === 0) {
+                    throw new Error('No valid paths found in JSON');
+                }
+                
+                pathsResult.textContent = paths.join(', ');
+                valuesResult.textContent = values.join(', ');
+                
+                pathsResult.className = 'result-content paths';
+                valuesResult.className = 'result-content values';
+            } catch (e) {
+                pathsResult.innerHTML = e.message;
+                valuesResult.innerHTML = 'Error processing JSON';
+                pathsResult.className = 'result-content error';
+                valuesResult.className = 'result-content error';
+            }
+        }
+    </script>
+</body>
+</html>
